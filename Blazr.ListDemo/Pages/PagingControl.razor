@@ -1,0 +1,42 @@
+﻿@implements IDisposable
+
+<div class="p-2">
+
+    <div class="btn-group">
+        @for (var i = 0; i < this.ListState.LastPage; i++)
+        {
+            var item = i + 1;
+            <button class="btn @ButtonCss(item)" @onclick="() => GoToPage(item)">@item</button>
+        }
+    </div>
+
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IPagingService Service { get; set; } = default!;
+    [Parameter] public EventCallback<int> PageChanged { get; set; }
+
+    private ListState ListState => Service.ListState;
+
+    private string ButtonCss(int value) => value == this.ListState.Page ? "btn-primary" : "btn-secondary";
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(Service);
+        this.Service.PageChanged += this.OnPageChanged;
+    }
+
+    private void OnPageChanged(object? sender, PagingEventArgs e)
+    {
+        if (sender != this)
+            this.InvokeAsync(StateHasChanged);
+    }
+
+    private void GoToPage(int page)
+    {
+        Service.NotifyPageChanged(this, new PagingEventArgs(page));   
+    }
+
+    public void Dispose()
+        => this.Service.PageChanged += this.OnPageChanged;
+}
